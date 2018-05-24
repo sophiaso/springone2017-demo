@@ -15,17 +15,24 @@ spring:
     oauth2:
       client:
         registration:
-          okta:
-            client-id: your-app-client-id
-            client-secret: your-app-client-secret
+          azure:
+            client-id: xxxxx-your-client-id-xxxxx
+            client-secret: xxxxx-your-client-secret-xxxxx
             client-authentication-method: basic
             authorization-grant-type: authorization_code
             redirect-uri-template: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope: openid, profile, email, address, phone
-            client-name: Okta
+            scope: openid, https://graph.microsoft.com/user.read
+            client-name: Azure
         provider:
-          okta:
-            authorization-uri: https://dev-829719.oktapreview.com/oauth2/v1/authorize
-            token-uri: https://dev-829719.oktapreview.com/oauth2/v1/token
-            user-info-uri: https://dev-829719.oktapreview.com/oauth2/v1/userinfo
-            jwk-set-uri: https://dev-829719.oktapreview.com/oauth2/v1/keys
+          azure:
+            authorization-uri: https://login.microsoftonline.com/common/oauth2/authorize
+            token-uri: https://login.microsoftonline.com/common/oauth2/token
+            user-info-uri: https://login.microsoftonline.com/common/openid/userinfo
+            jwk-set-uri: https://login.microsoftonline.com/common/discovery/keys
+
+azure:
+  activedirectory:
+    graphapiurl: https://graph.windows.net/
+    aadsiginurl: https://login.microsoftonline.com/
+    aadmemberurl: https://graph.windows.net/me/memberOf
+    tenantid: xxxxx-your-tenant-id-xxxxx
