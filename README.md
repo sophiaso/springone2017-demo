@@ -1,5 +1,10 @@
 # OAuth 2.0 Login Demo
 
+## Azure Active Directory OAuth2 login and authorities mapping
+Branch: **aad-oauth2**
+1. Login with OAuth2
+2. Mapping AAD groups to ROLE_XXX group as GrantedAuthority
+
 ## Login
 Branch: **demo-1**
 1. Google Login (Spring Boot 2.0 complete configuration)
