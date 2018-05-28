@@ -22,7 +22,7 @@ import com.microsoft.aad.adal4j.AuthenticationResult;
 import com.microsoft.aad.adal4j.ClientCredential;
 import com.microsoft.aad.adal4j.UserAssertion;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,7 +41,6 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import javax.naming.ServiceUnavailableException;
-import javax.validation.constraints.NotEmpty;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.*;
@@ -56,22 +55,13 @@ import java.util.stream.Collectors;
  */
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableConfigurationProperties(AzureADConfig.class)
 public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
-	@Value("${azure.activedirectory.graphapiurl:https://graph.windows.net/}")
-	private String graphAPIUrl;
-
-	@Value("${azure.activedirectory.aadsiginurl:https://login.microsoftonline.com/}")
-	private String aadSiginUrl;
-
-	@Value("${azure.activedirectory.aadmemberurl:https://graph.windows.net/me/memberOf}")
-	private String aadMemberUrl;
-
-	@Value("${azure.activedirectory.tenantid}")
-	@NotEmpty
-	private String tenantId;
-
 	@Autowired
 	private ClientRegistrationRepository clientRegistrationRepository;
+
+	@Autowired
+	private AzureADConfig azureADConfig;
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
@@ -93,16 +83,20 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 			OidcUser oidcUser = delegate.loadUser(userRequest);
 
 			OidcIdToken idToken = userRequest.getIdToken();
+
 			String clientId = userRequest.getClientRegistration().getClientId();
 			String clientSecret = userRequest.getClientRegistration().getClientSecret();
 			String graphApiToken;
 
 			try {
+				// https://github.com/MicrosoftDocs/azure-docs/issues/8121#issuecomment-387090099
+				// In AAD App Registration configure oauth2AllowImplicitFlow to true
 				graphApiToken = acquireTokenForGraphApi(
-						idToken.getTokenValue().toString(), clientId, clientSecret).getAccessToken();
+							   idToken.getTokenValue().toString(), clientId, clientSecret).getAccessToken();
 			} catch (Exception e) {
-				throw new IllegalStateException(e);
+				throw new IllegalStateException("Failed to acquire token for Graph API.", e);
 			}
+
 
 			Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
 
@@ -129,9 +123,9 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 		try {
 			service = Executors.newFixedThreadPool(1);
 			final AuthenticationContext context = new AuthenticationContext(
-					aadSiginUrl + tenantId + "/", true, service);
+					azureADConfig.getAadSiginUrl() + azureADConfig.getTenantId() + "/", true, service);
 			final Future<AuthenticationResult> future = context
-					.acquireToken(graphAPIUrl, assertion, credential, null);
+					.acquireToken(azureADConfig.getGraphAPIUrl(), assertion, credential, null);
 			result = future.get();
 		} finally {
 			if (service != null) {
@@ -156,7 +150,7 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private List<UserGroup> loadUserGroups(String graphApiToken) throws IOException {
 		final String responseInJson =
-				AzureADGraphClient.getUserMembershipsV1(graphApiToken, aadMemberUrl);
+				AzureADGraphClient.getUserMembershipsV1(graphApiToken, azureADConfig.getAadMemberUrl());
 		final List<UserGroup> lUserGroups = new ArrayList<>();
 		final ObjectMapper objectMapper = new ObjectMapper();
 		final JsonNode rootNode = objectMapper.readValue(responseInJson, JsonNode.class);
