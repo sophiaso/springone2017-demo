@@ -22,7 +22,7 @@ public class AzureADGraphClient {
         final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         // Set the appropriate header fields in the request header.
         conn.setRequestProperty("api-version", "1.6");
-        conn.setRequestProperty("Authorization", accessToken);
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken);
         conn.setRequestProperty("Accept", "application/json;odata=minimalmetadata");
         final String responseInJson = getResponseStringFromConn(conn);
         final int responseCode = conn.getResponseCode();
