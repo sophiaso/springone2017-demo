@@ -57,6 +57,8 @@ import java.util.stream.Collectors;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableConfigurationProperties(AzureADConfig.class)
 public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
+	private static final SimpleGrantedAuthority DEFAULT_AUTH = new SimpleGrantedAuthority("ROLE_USER");
+
 	@Autowired
 	private ClientRegistrationRepository clientRegistrationRepository;
 
@@ -65,6 +67,8 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		// TODO If groups not enabled, do not customize oidcUserService
+
 		http
 				.authorizeRequests()
 					.anyRequest().authenticated()
@@ -104,9 +108,13 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 			List<UserGroup> groups = getGroups(graphApiToken);
 			// 2) Map the authority information to one or more GrantedAuthority's and add it to mappedAuthorities
 			mappedAuthorities = groups.stream()
+					.filter(group -> azureADConfig.getGroup().getIncluded().contains(group))
 					.map(userGroup -> new SimpleGrantedAuthority("ROLE_" + userGroup.getDisplayName()))
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 			// 3) Create a copy of oidcUser but use the mappedAuthorities instead
+			if (mappedAuthorities.isEmpty()) {
+				mappedAuthorities.add(DEFAULT_AUTH);
+			}
 			oidcUser = new DefaultOidcUser(mappedAuthorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
 
 			return oidcUser;
