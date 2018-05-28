@@ -108,7 +108,7 @@ public class OAuth2LoginSecurityConfig extends WebSecurityConfigurerAdapter {
 			List<UserGroup> groups = getGroups(graphApiToken);
 			// 2) Map the authority information to one or more GrantedAuthority's and add it to mappedAuthorities
 			mappedAuthorities = groups.stream()
-					.filter(group -> azureADConfig.getGroup().getIncluded().contains(group))
+					.filter(group -> azureADConfig.getGroup().getIncluded().contains(group.getDisplayName()))
 					.map(userGroup -> new SimpleGrantedAuthority("ROLE_" + userGroup.getDisplayName()))
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 			// 3) Create a copy of oidcUser but use the mappedAuthorities instead
