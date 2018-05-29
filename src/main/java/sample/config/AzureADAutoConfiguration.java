@@ -37,12 +37,6 @@ public class AzureADAutoConfiguration {
         return this.delegationOidcUserService();
     }
 
-    @Bean
-    @ConditionalOnMissingBean(value = OAuth2UserService.class)
-    public OAuth2UserService<OidcUserRequest, OidcUser> defaultOidcUserService() {
-        return new OidcUserService();
-    }
-
     private OAuth2UserService<OidcUserRequest, OidcUser> delegationOidcUserService() {
         final OidcUserService delegate = new OidcUserService();
 
